@@ -103,8 +103,10 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  short switchReadOut;
-
+  unsigned char switchRead = 0;
+  unsigned int switchReadOut = 0;
+  unsigned char segIndex = 0;
+  unsigned char debounce = 0;
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -125,17 +127,52 @@ int main(void)
   GPIOC->MODER |= 0x0; // Port C mode register - all inputs
   GPIOE->ODR = 0xFFFF; // Set all Port E pins high
   /* USER CODE END 2 */
-
+  GPIOD->ODR = 0x1;
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
 
+	  //Reads the switches and lights LEDs representing the number in binary
+	  switchRead = (GPIOC->IDR & (0xF << 12)) >> 12;
+	  GPIOD->ODR &= ~(0xFF << 12);
+	  GPIOD->ODR |= (switchRead << 12);
 
+	  //If button PC11 is pressed, it will lock the number into the selected 7 segment display
+	  if(1> (GPIOC->IDR & 0x1<< 11)>>11){
+		  switchRead = (GPIOC->IDR & (0xF << 12)) >> 12;
+		  switchReadOut &= ~((0xf) << segIndex*4);
+		  switchReadOut |= ((switchRead << segIndex*4) & 0xf << segIndex*4);
 
+	  }
 
-	  switchReadOut = GPIOC->IDR & ~(~(0xF << 8));
+	  /*If the PC10 button is pressed, it will cycle through the segments
+	  * and update LED indicator of the selected 7 segment display.
+	  *It will also ensure that, once pressed, it can't increment again until
+	  * the button is depressed.
+	  */
+
+	  if((0 == (GPIOC->IDR & 0x1<< 10)>>10) && debounce == 0){
+		  debounce = 1;
+		  segIndex = (segIndex+1) % 8;
+		  GPIOD->ODR &= ~(0xFF);
+		  GPIOD->ODR |= 0x1 << segIndex;
+
+	  } else if((1 == (GPIOC->IDR & 0x1<< 10)>>10)){
+		  debounce = 0;
+	  }
+
+	  //Updates the 7 segment display
 	  Seven_Segment(switchReadOut);
+
+
+
+
+
+
+	  //}
+
+
 
 
 	  //int i;
@@ -145,9 +182,9 @@ int main(void)
 	  //}
 	  //HAL_Delay(5000); // delay for 5000 milliseconds
 
-	  //Seven_Segment(0x5ADFACE5);
+	 // Seven_Segment(0x5ADFACE5);
 //
-	  //HAL_Delay(5000); // delay for 5000 milliseconds
+	 // HAL_Delay(5000); // delay for 5000 milliseconds
 
 
     /* USER CODE BEGIN 3 */
@@ -200,6 +237,9 @@ void SystemClock_Config(void)
   }
 }
 
+/**
+ *
+ */
 
 
 /**
